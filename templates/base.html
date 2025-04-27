@@ -6,9 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Cloudinary File Manager{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Google Platform Library for Sign-In -->
-    <script src="https://apis.google.com/js/platform.js" async defer></script>
-    <meta name="google-signin-client_id" content="{{ g.google_client_id }}">
+    <!-- Google Platform Library for Sign-In removed due to deprecation found through debugging -->
+
+    <!-- Google Identity Services Client Library Added via debugging-->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     {% block head_extra %}{% endblock %}
 </head>
 <body>
