@@ -1,3 +1,23 @@
+# --- START OF main.py ---
+import os
+import datetime
+import sys # Import sys for stderr
+from functools import wraps
+
+# ... (other imports) ...
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+import cloudinary.utils 
+
+from google.cloud import datastore
+from google.oauth2.id_token import verify_oauth2_token
+
+from flask import (
+    Flask, render_template, request, redirect, url_for, session, flash, g, jsonify, make_response
+)
+
+
 # --- Configuration ---
 app = Flask(__name__)
 
@@ -67,11 +87,164 @@ except Exception as e:
 
 ASSET_KIND = "CloudinaryAsset" # Datastore Kind for storing asset references
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'webm', 'mkv'} # Adjust as needed
-
+print("Global variables defined.", file=sys.stderr) # Added print
 
 # --- The rest of your helper functions and routes remain the same ---
 # ... (keep all functions from allowed_file down to the end of the file) ...
 
+
+
+# --- Flask Routes ---
+
+@app.before_request
+def load_logged_in_user():
+    """If user_id is stored in the session, load the user object."""
+    user_info = session.get('user_info')
+    if user_info is None:
+        g.user = None
+    else:
+        g.user = user_info
+    # Make Google Client ID available to base template
+    g.google_client_id = GOOGLE_CLIENT_ID
+
+
+@app.route('/login')
+def login():
+    """Renders the login page."""
+    if g.user: # If already logged in, redirect to index
+        return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/auth/google', methods=['POST'])
+def auth_google():
+    """Handles the callback from Google Sign-In."""
+    token = request.form.get('id_token')
+    if not token:
+        flash('Authentication token missing.', 'error')
+        return redirect(url_for('login'))
+
+    user_info = verify_google_token(token)
+
+    if user_info and 'email' in user_info:
+        # Store essential user info in session
+        session['user_info'] = {
+            'id': user_info['sub'], # Google's unique user ID
+            'name': user_info.get('name'),
+            'email': user_info['email'],
+            'picture': user_info.get('picture')
+        }
+        session.permanent = True # Make session last longer
+        app.logger.info(f"User logged in: {user_info['email']}")
+        flash(f"Welcome, {user_info.get('name', user_info['email'])}!", 'success')
+        return redirect(url_for('index'))
+    else:
+        flash('Invalid Google Sign-In token. Please try again.', 'error')
+        return redirect(url_for('login'))
+
+@app.route('/logout')
+def logout():
+    """Logs the user out."""
+    session.pop('user_info', None)
+    flash('You have been logged out.', 'info')
+    # Note: We don't strictly need to call Google's signout here,
+    # as our session is cleared. The frontend JS handles Google's side if needed.
+    return redirect(url_for('login'))
+
+
+@app.route('/')
+@login_required
+def index():
+    """Displays the main file manager page (list of files and upload form)."""
+    user_email = g.user['email']
+    assets = list_user_assets(user_email)
+    return render_template('index.html', assets=assets)
+
+@app.route('/upload', methods=['POST'])
+@login_required
+def upload():
+    """Handles file uploads to Cloudinary."""
+    if 'file' not in request.files:
+        flash('No file part', 'error')
+        return redirect(url_for('index'))
+
+    file = request.files['file']
+    if file.filename == '':
+        flash('No selected file', 'error')
+        return redirect(url_for('index'))
+
+    if file and allowed_file(file.filename):
+        try:
+            # Build transformation options from form
+            transform_options = []
+            applied_transform_descriptions = [] # For storing in Datastore
+
+            width = request.form.get('width')
+            height = request.form.get('height')
+            crop = request.form.get('crop')
+            effect = request.form.get('effect')
+
+            if width or height or crop:
+                transform = {"width": width or None, "height": height or None, "crop": crop or None}
+                # Remove None values before adding to options
+                transform_options.append({k: v for k, v in transform.items() if v})
+                desc = f"resize(w:{width or 'auto'}, h:{height or 'auto'}, crop:{crop or 'none'})"
+                applied_transform_descriptions.append(desc)
+
+            if effect:
+                transform_options.append({"effect": effect})
+                applied_transform_descriptions.append(f"effect({effect})")
+
+
+            # Upload to Cloudinary
+            # resource_type="auto" lets Cloudinary detect image/video
+            # Pass transformations directly in the upload call
+            # Use user's email (sanitized) or user ID as part of the public_id prefix for organization
+            user_prefix = g.user['email'].split('@')[0].replace('.', '-') # Simple prefix
+            public_id = f"user_{user_prefix}/{file.filename.rsplit('.', 1)[0]}_{os.urandom(4).hex()}" # Add randomness
+
+            upload_result = cloudinary.uploader.upload(
+                file,
+                resource_type="auto",
+                public_id=public_id,
+                folder=f"appengine_uploads/{g.user['email']}", # Organize in Cloudinary folders
+                transformation=transform_options if transform_options else None
+                # Other options: tags=['appengine', 'user_upload'], context={'user_id': g.user['id']}
+            )
+
+            app.logger.info(f"Cloudinary upload successful: {upload_result.get('public_id')}")
+
+            # Save reference to Datastore
+            save_asset_reference(g.user['email'], upload_result, applied_transform_descriptions)
+
+            flash(f"File '{upload_result.get('original_filename', file.filename)}' uploaded successfully!", 'success')
+
+        except Exception as e:
+            app.logger.error(f"Upload failed: {e}")
+            flash(f'An error occurred during upload: {e}', 'error')
+            # Consider more specific error handling for Cloudinary exceptions
+
+        return redirect(url_for('index'))
+    else:
+        flash('File type not allowed.', 'error')
+        return redirect(url_for('index'))
+
+
+@app.route('/delete/<string:asset_key_str>', methods=['POST'])
+@login_required
+def delete_asset(asset_key_str):
+    """Deletes an asset from Cloudinary and Datastore."""
+    user_email = g.user['email']
+    success, message = delete_asset_reference_and_cloudinary(asset_key_str, user_email)
+
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'error')
+
+    return redirect(url_for('index'))
+
+
+print("Functions and routes defined.", file=sys.stderr) # Added print
 
 # --- Local Development Server ---
 # This block remains unchanged - it's only for local execution.
@@ -116,3 +289,8 @@ if __name__ == '__main__':
 
     # Run the app locally
     app.run(host='127.0.0.1', port=8080, debug=True)
+
+    print("main.py loaded successfully.", file=sys.stderr) # Final confirmation
+
+    # Note: The above print statement will show in the console when running locally.
+    # In production, the logger will handle output to stderr as configured in the app.
