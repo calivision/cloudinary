@@ -1,0 +1,9 @@
+# gae-cloudinary-manager/requirements.txt
+
+Flask>=2.0
+cloudinary>=1.26  # Or latest version
+google-cloud-datastore>=2.5 # Or latest version
+google-auth>=2.3 # Or latest version
+requests>=2.25 # google-auth dependency
+gunicorn>=20.1 # For App Engine deployment
+python-dotenv>=0.19 # For local development env vars (optional but good practice)

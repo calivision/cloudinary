@@ -1,0 +1,59 @@
+<!-- gae-cloudinary-manager/templates/login.html -->
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+    <h2>Please Login</h2>
+    <p>Login with your Google Account to manage files.</p>
+
+    <!-- Google Sign-In Button -->
+    <div id="google-signin-button" class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+
+    <form id="google-auth-form" action="{{ url_for('auth_google') }}" method="post" style="display: none;">
+        <input type="hidden" name="id_token" id="id_token_field">
+    </form>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+    function onSignIn(googleUser) {
+      console.log('Google Sign-In Success');
+      var id_token = googleUser.getAuthResponse().id_token;
+      // console.log("ID Token: " + id_token); // For debugging
+      document.getElementById('id_token_field').value = id_token;
+      document.getElementById('google-auth-form').submit(); // Send token to backend
+    }
+
+    function signOut() {
+        var auth2 = gapi.auth2.getAuthInstance();
+        auth2.signOut().then(function () {
+            console.log('User signed out.');
+            // Redirect to backend logout to clear session
+            window.location.href = "{{ url_for('logout') }}";
+        });
+    }
+
+    // Optional: If user is already signed in, maybe trigger onSignIn automatically
+    // gapi.load('auth2', function() {
+    //     gapi.auth2.init().then(function(){
+    //         var auth2 = gapi.auth2.getAuthInstance();
+    //         if (auth2.isSignedIn.get()) {
+    //             var googleUser = auth2.currentUser.get();
+    //             onSignIn(googleUser);
+    //         } else {
+    //             // Render the button if not signed in
+    //            gapi.signin2.render('google-signin-button', {
+    //                'scope': 'profile email',
+    //                'width': 240,
+    //                'height': 50,
+    //                'longtitle': true,
+    //                'theme': 'dark',
+    //                'onsuccess': onSignIn
+    //            });
+    //         }
+    //     });
+    // });
+</script>
+{% endblock %}

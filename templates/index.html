@@ -1,0 +1,92 @@
+<!-- gae-cloudinary-manager/templates/index.html -->
+{% extends "base.html" %}
+
+{% block title %}File Manager{% endblock %}
+
+{% block content %}
+    <h2>Upload New File</h2>
+    <form method="post" action="{{ url_for('upload') }}" enctype="multipart/form-data">
+        <label for="file">Choose file (Image or Video):</label>
+        <input type="file" id="file" name="file" accept="image/*,video/*" required>
+        <br><br>
+        <fieldset>
+            <legend>Optional Transformations on Upload</legend>
+            <label for="width">Resize Width:</label>
+            <input type="number" name="width" id="width" placeholder="e.g., 500"> px
+            <br>
+            <label for="height">Resize Height:</label>
+            <input type="number" name="height" id="height" placeholder="e.g., 400"> px
+            <br>
+            <label for="crop">Crop Mode:</label>
+            <select name="crop" id="crop">
+                <option value="">None</option>
+                <option value="fill">Fill</option>
+                <option value="fit">Fit</option>
+                <option value="crop">Crop</option>
+                <option value="thumb">Thumbnail</option>
+            </select>
+             <br>
+            <label for="effect">Effect:</label>
+            <select name="effect" id="effect">
+                <option value="">None</option>
+                <option value="sepia">Sepia</option>
+                <option value="grayscale">Grayscale</option>
+                <option value="vignette">Vignette</option>
+                <option value="cartoonify">Cartoonify</option>
+            </select>
+        </fieldset>
+        <br>
+        <button type="submit">Upload</button>
+    </form>
+
+    <hr>
+
+    <h2>My Uploaded Files</h2>
+    {% if assets %}
+        <div class="file-grid">
+            {% for asset in assets %}
+                <div class="file-item">
+                    <h3>{{ asset.public_id }}</h3>
+                    <p>Type: {{ asset.resource_type }} | Format: {{ asset.format }}</p>
+                    <p>Uploaded: {{ asset.created_at.strftime('%Y-%m-%d %H:%M') if asset.created_at else 'N/A' }}</p>
+
+                    {% if asset.resource_type == 'image' %}
+                        <img src="{{ asset.thumbnail_url }}" alt="Thumbnail for {{ asset.public_id }}">
+                    {% elif asset.resource_type == 'video' %}
+                        <video width="150" height="100" controls>
+                            <source src="{{ asset.thumbnail_url }}" type="video/{{ asset.format if asset.format in ['mp4', 'webm', 'ogv'] else 'mp4' }}">
+                            Your browser does not support the video tag.
+                        </video>
+                    {% else %}
+                        <p><i>Preview not available</i></p>
+                    {% endif %}
+
+                    <p>
+                        <a href="{{ asset.secure_url }}" target="_blank">View Original</a>
+                    </p>
+                    {% if asset.upload_transformations %}
+                        <p><strong>Uploaded with:</strong> {{ asset.upload_transformations | join(', ') }}</p>
+                    {% endif %}
+
+                    <details>
+                        <summary>More Details & Transformations</summary>
+                        <p>Public ID: <code>{{ asset.public_id }}</code></p>
+                        <p>Secure URL: <code>{{ asset.secure_url }}</code></p>
+                         <p>
+                           Thumbnail (150x100, fill): <a href="{{ asset.thumbnail_url }}" target="_blank">Link</a><br>
+                           Grayscale: <a href="{{ asset.grayscale_url }}" target="_blank">Link</a><br>
+                           Resized (w=300): <a href="{{ asset.resized_url }}" target="_blank">Link</a>
+                        </p>
+                    </details>
+
+                    <form action="{{ url_for('delete_asset', asset_key_str=asset.key.urlsafe().decode('utf-8')) }}" method="post" style="margin-top: 10px;">
+                         <button type="submit" class="delete-button" onclick="return confirm('Are you sure you want to delete {{ asset.public_id }}?');">Delete</button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>You haven't uploaded any files yet.</p>
+    {% endif %}
+
+{% endblock %}
