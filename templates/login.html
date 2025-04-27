@@ -1,0 +1,82 @@
+<!-- gae-cloudinary-manager/templates/login.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+
+     <h2>Please Login</h2>
+     <p>Login with your Google Account to manage files.</p>
+
+
+    <!-- Google Identity Services Sign In -->
+    <div id="g_id_onload"
+         data-client_id="{{ g.google_client_id }}"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"  
+         data-auto_prompt="false">
+    </div>
+ 
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="rectangular"
+         data-theme="outline"
+         data-text="signin_with"
+         data-size="large"
+         data-logo_alignment="left">
+    </div>
+
+    {# This hidden form remains the same #}
+     <form id="google-auth-form" action="{{ url_for('auth_google') }}" method="post" style="display: none;">
+         <input type="hidden" name="id_token" id="id_token_field">
+     </form>
+
+ {% endblock %}
+
+{% block scripts_extra %}
+<script type="text/javascript">
+        // NEW GIS Callback function
+        function handleCredentialResponse(credentialResponse) {
+          console.log("GIS Callback executed.");
+          // The ID token is in the 'credential' field
+          const id_token = credentialResponse.credential;
+          console.log("ID Token retrieved via GIS (first few chars): " + id_token.substring(0, 20));
+    
+          const form = document.getElementById('google-auth-form');
+          const tokenField = document.getElementById('id_token_field');
+    
+          if (!form || !tokenField) {
+              console.error('ERROR: Hidden form or token field not found!');
+              return;
+          }
+    
+          console.log('Setting token field value...');
+          document.getElementById('id_token_field').value = id_token;
+          console.log('Submitting form to /auth/google...');
+          document.getElementById('google-auth-form').submit(); // Send token to backend
+        }
+
+    // Optional: If user is already signed in, maybe trigger onSignIn automatically
+    // gapi.load('auth2', function() {
+    //     gapi.auth2.init().then(function(){
+    //         var auth2 = gapi.auth2.getAuthInstance();
+    //         if (auth2.isSignedIn.get()) {
+    //             var googleUser = auth2.currentUser.get();
+    //             onSignIn(googleUser);
+    //         } else {
+    //             // Render the button if not signed in
+    //            gapi.signin2.render('google-signin-button', {
+    //                'scope': 'profile email',
+    //                'width': 240,
+    //                'height': 50,
+    //                'longtitle': true,
+    //                'theme': 'dark',
+    //                'onsuccess': onSignIn
+    //            });
+    //         }
+    //     });
+    // });
+</script>
+{% endblock %}
