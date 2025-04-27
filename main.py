@@ -8,11 +8,16 @@ from functools import wraps
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-import cloudinary.utils 
+import cloudinary.utils
 
 from google.cloud import datastore
-from google.oauth2.id_token import verify_oauth2_token
+# Removed problematic import from google.oauth2.id_token
+# from google.oauth2.id_token import verify_oauth2_token
+# Let's use the definition within the file for now
+from google.auth.transport import requests as google_requests # Need this for verify_google_token
+from google.oauth2 import id_token # Need this for verify_google_token
 
+# THIS IS THE CRITICAL IMPORT
 from flask import (
     Flask, render_template, request, redirect, url_for, session, flash, g, jsonify, make_response
 )
