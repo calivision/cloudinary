@@ -163,8 +163,9 @@ def list_user_assets(user_email):
     # Add dynamically generated transformation URLs for easy display
     for asset in results:
          # Store the key for deletion purposes
-        asset.key = asset.id or asset.key.name # Make key accessible directly
+        # asset.key = asset.id or asset.key.name # Make key accessible directly <-- Causing 500 error in template
 
+        # --- Keep URL generation logic here ---
         # Basic thumbnail
         asset.thumbnail_url = cloudinary.utils.cloudinary_url(
             asset['public_id'],
@@ -299,17 +300,16 @@ def logout():
 
 
 @app.route('/')
-@login_required
+@login_required # UNCOMMENT or add this decorator back
 def index():
     """Displays the main file manager page (list of files and upload form)."""
+    # --- ORIGINAL LOGIC ---
     user_email = g.user['email']
-    app.logger.info(f"Serving index page for user: {user_email}") # Add log
-    # --- TEMPORARILY COMMENT OUT ASSET LOADING ---
-    assets = []
-    # assets = list_user_assets(user_email)
-    # --- END OF TEMPORARY CHANGE ---
-    app.logger.info(f"Rendering index template (assets bypassed)") # Add log
-    return render_template('index.html', assets=assets)
+    app.logger.info(f"INDEX: Attempting to list assets for user: '{user_email}'") # Keep Log
+    assets = list_user_assets(user_email) # UNCOMMENT this line
+    app.logger.info(f"INDEX: list_user_assets returned {len(assets) if assets is not None else 'None'} assets.") # Keep Log
+    return render_template('index.html', assets=assets) # Use the template again
+    # --- END ORIGINAL LOGIC --- 
 
 @app.route('/upload', methods=['POST'])
 @login_required
