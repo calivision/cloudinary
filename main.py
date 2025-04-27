@@ -254,12 +254,6 @@ def load_logged_in_user():
     # Make Google Client ID available to base template
     # previous --> $ g.google_client_id = GOOGLE_CLIENT_ID
 
-@app.route('/minimal_test')
-def minimal_test_route():
-    # Need to ensure g.google_client_id is set, maybe call load_logged_in_user manually
-    # Or simply pass it directly for this test
-    client_id = os.environ.get('GOOGLE_CLIENT_ID')
-    return render_template('minimal_test.html', g={'google_client_id': client_id})
 
 @app.route('/login')
 def login():
@@ -305,16 +299,16 @@ def logout():
 
 
 @app.route('/')
-@login_required
+@login_required # UNCOMMENT or add this decorator back
 def index():
-    # --- START OF MINIMAL DEBUG ---
-    import sys # Ensure sys is imported if not already global
-    print("--- MINIMAL INDEX HANDLER REACHED ---", file=sys.stderr)
-    # Directly return a simple string, bypassing templates entirely
-    return "Minimal Index Reached Successfully"
-    # --- END OF MINIMAL DEBUG ---
-    
-    
+    """Displays the main file manager page (list of files and upload form)."""
+    # --- ORIGINAL LOGIC ---
+    user_email = g.user['email']
+    app.logger.info(f"INDEX: Attempting to list assets for user: '{user_email}'") # Keep Log
+    assets = list_user_assets(user_email) # UNCOMMENT this line
+    app.logger.info(f"INDEX: list_user_assets returned {len(assets) if assets is not None else 'None'} assets.") # Keep Log
+    return render_template('index.html', assets=assets) # Use the template again
+    # --- END ORIGINAL LOGIC --- 
 
 @app.route('/upload', methods=['POST'])
 @login_required
