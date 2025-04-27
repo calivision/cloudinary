@@ -239,8 +239,19 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = user_info
+
+    # --- ADD LOGGING HERE ---
+    client_id_from_env = os.environ.get('GOOGLE_CLIENT_ID')
+    app.logger.info(f"Value of GOOGLE_CLIENT_ID from env in before_request: '{client_id_from_env}'")
+    if not client_id_from_env:
+         app.logger.warning("GOOGLE_CLIENT_ID env var is empty or None in before_request!")
+    # --- END LOGGING ---
+
     # Make Google Client ID available to base template
-    g.google_client_id = GOOGLE_CLIENT_ID
+    g.google_client_id = client_id_from_env # Use the variable we just logged
+
+    # Make Google Client ID available to base template
+    # previous --> $ g.google_client_id = GOOGLE_CLIENT_ID
 
 
 @app.route('/login')
