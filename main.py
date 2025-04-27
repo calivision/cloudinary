@@ -17,7 +17,6 @@ from flask import (
     Flask, render_template, request, redirect, url_for, session, flash, g, jsonify, make_response
 )
 
-
 # --- Configuration ---
 app = Flask(__name__)
 
