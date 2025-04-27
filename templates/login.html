@@ -19,11 +19,26 @@
 {% block scripts_extra %}
 <script>
     function onSignIn(googleUser) {
-      console.log('Google Sign-In Success');
+      console.log('Google Sign-In Success: onSignIn function started.'); // ADDED
       var id_token = googleUser.getAuthResponse().id_token;
-      // console.log("ID Token: " + id_token); // For debugging
-      document.getElementById('id_token_field').value = id_token;
-      document.getElementById('google-auth-form').submit(); // Send token to backend
+      console.log("ID Token retrieved (first few chars): " + id_token.substring(0, 20)); // ADDED - Don't log full token
+      var form = document.getElementById('google-auth-form');
+      var tokenField = document.getElementById('id_token_field');
+
+      if (!form) {
+      console.error('ERROR: google-auth-form not found!'); // ADDED
+      return;
+      }
+      if (!tokenField) {
+      console.error('ERROR: id_token_field not found!'); // ADDED
+      return;
+      }
+
+      console.log('Setting token field value...'); // ADDED
+      tokenField.value = id_token;
+      console.log('Submitting form...'); // ADDED
+      form.submit(); // Send token to backend
+      console.log('Form submission initiated.'); // ADDED
     }
 
     function signOut() {
