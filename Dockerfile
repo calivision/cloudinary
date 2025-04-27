@@ -29,4 +29,5 @@ COPY . .
 # Define the command to run the application using Gunicorn
 # Gunicorn will listen on 0.0.0.0 and the port specified by the $PORT env var.
 # Caused errors--> CMD ["gunicorn", "-b", "0.0.0.0:$PORT", "main:app"]
-CMD gunicorn -b 0.0.0.0:$PORT main:app
+CMD gunicorn --log-level=info --error-logfile=- --access-logfile=- -b 0.0.0.0:$PORT main:app
+# CMD gunicorn -b 0.0.0.0:$PORT main:app
