@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <!-- Google Platform Library for Sign-In -->
     <script src="https://apis.google.com/js/platform.js" async defer></script>
-    <meta name="google-signin-client_id" content="{{ google_client_id }}">
+    <meta name="google-signin-client_id" content="{{ g.google_client_id }}">
     {% block head_extra %}{% endblock %}
 </head>
 <body>

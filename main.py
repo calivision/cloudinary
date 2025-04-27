@@ -245,6 +245,7 @@ def load_logged_in_user():
     app.logger.info(f"Value of GOOGLE_CLIENT_ID from env in before_request: '{client_id_from_env}'")
     if not client_id_from_env:
          app.logger.warning("GOOGLE_CLIENT_ID env var is empty or None in before_request!")
+    
     # --- END LOGGING ---
 
     # Make Google Client ID available to base template
