@@ -1,0 +1,8 @@
+indexes:
+
+- kind: CloudinaryAsset
+  properties:
+  - name: user_email
+    direction: asc
+  - name: created_at
+    direction: desc

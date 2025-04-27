@@ -79,7 +79,7 @@
                         </p>
                     </details>
 
-                    <form action="{{ url_for('delete_asset', asset_key_str=asset.key.urlsafe().decode('utf-8')) }}" method="post" style="margin-top: 10px;">
+                    <form action="{{ url_for('delete_asset', asset_key_str=asset.key.to_legacy_urlsafe().decode('utf-8')) }}" method="post" style="margin-top: 10px;">
                          <button type="submit" class="delete-button" onclick="return confirm('Are you sure you want to delete {{ asset.public_id }}?');">Delete</button>
                     </form>
                 </div>

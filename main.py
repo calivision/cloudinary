@@ -163,8 +163,9 @@ def list_user_assets(user_email):
     # Add dynamically generated transformation URLs for easy display
     for asset in results:
          # Store the key for deletion purposes
-        asset.key = asset.id or asset.key.name # Make key accessible directly
+        # asset.key = asset.id or asset.key.name # Make key accessible directly <-- Causing 500 error in template
 
+        # --- Keep URL generation logic here ---
         # Basic thumbnail
         asset.thumbnail_url = cloudinary.utils.cloudinary_url(
             asset['public_id'],
