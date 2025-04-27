@@ -93,12 +93,141 @@ except Exception as e:
 
 ASSET_KIND = "CloudinaryAsset" # Datastore Kind for storing asset references
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi', 'webm', 'mkv'} # Adjust as needed
-print("Global variables defined.", file=sys.stderr) # Added print
+print("--- Global constants defined ---", file=sys.stderr)
 
-# --- The rest of your helper functions and routes remain the same ---
-# ... (keep all functions from allowed_file down to the end of the file) ...
+# --- HELPER FUNCTION DEFINITIONS ---
+print("--- Defining Helper Functions ---", file=sys.stderr)
 
+# --- Helper Functions ---
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def login_required(f):
+    """Decorator to ensure user is logged in."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_info' not in session:
+            flash('Please log in to access this page.', 'info')
+            return redirect(url_for('login'))
+        # Make user info available globally in templates via 'g'
+        g.user = session.get('user_info')
+        return f(*args, **kwargs)
+    return decorated_function
+
+def verify_google_token(token):
+    """Verifies Google ID token and returns user info."""
+    try:
+        # Specify the CLIENT_ID of the app that accesses the backend:
+        idinfo = id_token.verify_oauth2_token(
+            token, google_requests.Request(), GOOGLE_CLIENT_ID
+        )
+        # ID token is valid. Get the user's Google Account ID from the decoded token.
+        # Typically contains 'sub', 'email', 'name', 'picture', etc.
+        return idinfo
+    except ValueError as e:
+        # Invalid token
+        app.logger.error(f"Google token verification failed: {e}")
+        return None
+    except Exception as e:
+        app.logger.error(f"An unexpected error occurred during token verification: {e}")
+        return None
+
+def save_asset_reference(user_email, upload_result, transformations_applied=None):
+    """Saves asset metadata to Datastore."""
+    key = datastore_client.key(ASSET_KIND) # Auto-generate ID
+    entity = datastore.Entity(key=key)
+    entity.update({
+        'user_email': user_email,
+        'public_id': upload_result['public_id'],
+        'resource_type': upload_result['resource_type'],
+        'format': upload_result.get('format'), # Format might not exist for raw files etc.
+        'version': upload_result['version'],
+        'secure_url': upload_result['secure_url'],
+        'created_at': datetime.datetime.utcnow(),
+        'bytes': upload_result['bytes'],
+        'upload_transformations': transformations_applied or [] # Store list of transformations applied
+    })
+    datastore_client.put(entity)
+    app.logger.info(f"Saved asset reference to Datastore: {entity.key}")
+    return entity
+
+def list_user_assets(user_email):
+    """Lists assets for a specific user from Datastore."""
+    query = datastore_client.query(kind=ASSET_KIND)
+    query.add_filter('user_email', '=', user_email)
+    query.order = ['-created_at'] # Show newest first
+    results = list(query.fetch())
+
+    # Add dynamically generated transformation URLs for easy display
+    for asset in results:
+         # Store the key for deletion purposes
+        asset.key = asset.id or asset.key.name # Make key accessible directly
+
+        # Basic thumbnail
+        asset.thumbnail_url = cloudinary.utils.cloudinary_url(
+            asset['public_id'],
+            resource_type=asset['resource_type'],
+            format=asset.get('format'),
+            version=asset['version'],
+            width=150, height=100, crop="fill", # Adjust thumbnail size/crop
+            secure=True
+        )[0] # cloudinary_url returns (url, options)
+
+        # Example other transformations
+        asset.grayscale_url = cloudinary.utils.cloudinary_url(
+            asset['public_id'], resource_type=asset['resource_type'], format=asset.get('format'), version=asset['version'],
+            effect="grayscale", secure=True
+        )[0]
+        asset.resized_url = cloudinary.utils.cloudinary_url(
+            asset['public_id'], resource_type=asset['resource_type'], format=asset.get('format'), version=asset['version'],
+            width=300, crop="limit", secure=True # Limit ensures it doesn't upscale
+        )[0]
+
+    return results
+
+def delete_asset_reference_and_cloudinary(asset_key_str, user_email):
+    """Deletes asset from Datastore and Cloudinary after verifying ownership."""
+    try:
+        key = datastore_client.key(ASSET_KIND, int(asset_key_str) if asset_key_str.isdigit() else asset_key_str) # Handle numeric/string IDs if structure changes
+        # Or if using urlsafe key from template:
+        key = datastore_client.key(urlsafe=asset_key_str.encode('utf-8'))
+
+        entity = datastore_client.get(key)
+
+        if not entity:
+            app.logger.warning(f"Asset key {asset_key_str} not found in Datastore.")
+            return False, "Asset not found."
+
+        if entity['user_email'] != user_email:
+            app.logger.error(f"User {user_email} attempted to delete asset belonging to {entity['user_email']}.")
+            return False, "Permission denied."
+
+        # Delete from Cloudinary first
+        public_id = entity['public_id']
+        resource_type = entity['resource_type']
+        try:
+            delete_result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+            if delete_result.get('result') != 'ok' and delete_result.get('result') != 'not found':
+                 # Log error but proceed to delete from Datastore maybe? Or stop?
+                 app.logger.error(f"Cloudinary deletion failed for {public_id}: {delete_result}")
+                 # Decide if this is a fatal error for the operation
+                 # return False, "Cloudinary deletion failed."
+            app.logger.info(f"Cloudinary deletion result for {public_id}: {delete_result.get('result')}")
+        except Exception as e:
+            app.logger.error(f"Error calling Cloudinary destroy for {public_id}: {e}")
+            # Decide if this is a fatal error
+            # return False, "Error during Cloudinary deletion."
+
+        # Delete from Datastore
+        datastore_client.delete(key)
+        app.logger.info(f"Deleted asset {asset_key_str} (Cloudinary public_id: {public_id}) from Datastore.")
+        return True, "Asset deleted successfully."
+
+    except Exception as e:
+        app.logger.error(f"Error deleting asset {asset_key_str}: {e}")
+        return False, "An error occurred during deletion."
 
 # --- Flask Routes ---
 
@@ -162,7 +291,12 @@ def logout():
 def index():
     """Displays the main file manager page (list of files and upload form)."""
     user_email = g.user['email']
-    assets = list_user_assets(user_email)
+    app.logger.info(f"Serving index page for user: {user_email}") # Add log
+    # --- TEMPORARILY COMMENT OUT ASSET LOADING ---
+    assets = []
+    # assets = list_user_assets(user_email)
+    # --- END OF TEMPORARY CHANGE ---
+    app.logger.info(f"Rendering index template (assets bypassed)") # Add log
     return render_template('index.html', assets=assets)
 
 @app.route('/upload', methods=['POST'])
