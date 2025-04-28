@@ -51,7 +51,7 @@ Ready to launch your own Cloud Vision Manager? Here's the high-level view:
 
 **Quick Deployment Steps:**
 
-1.  **Clone the Repository:** `git clone [Your Repo URL]`
+1.  **Clone the Repository:** `git clone https://github.com/calivision/cloudinary.git`
 2.  **Create Datastore Index:** Create the required composite index for `CloudinaryAsset` (see `index.yaml` or documentation). Deploy it: `gcloud datastore indexes create index.yaml --project=YOUR_PROJECT_ID` and wait for it to become "Serving".
 3.  **Configure Secrets:** Create `CLOUDINARY_API_SECRET` and `flask-secret-key` in Secret Manager.
 4.  **Build the Container:** `gcloud builds submit --tag REGION-docker.pkg.dev/YOUR_PROJECT_ID/YOUR_REPO/cloudinary-manager --project=YOUR_PROJECT_ID`
