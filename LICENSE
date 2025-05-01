@@ -1,6 +1,12 @@
 MIT License
 
-Copyright (c) 2025 California Vision, Inc.
+Copyright (c) 2025 David Anderson.
+
+I used Gemini 2.5 Pro Preview 03-25 to generate and debug code in this repository. The Python/Flask Architecture can be extended to other features and use cases. 
+
+For secure deployment of this code it is important to successfully implement OAuth2 and enforce MFA policies for all users.
+
+Policies for IAM/IAP roles in Google Cloud may need to be updated for successful deployment on your Organization's Google Cloud Platorm.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
