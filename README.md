@@ -86,6 +86,13 @@ We're just getting started! We envision Cloud Vision Manager becoming even more 
 *   🏷️ **Tagging & Metadata Editing:** Manage tags and metadata directly.
 
 ---
+## Known Issue
+
+The Delete button throws an error, described in this [known issue](https://github.com/calivision/cloudinary/issues/5). 
+
+**Pictures may be deleted using the Cloudinary platform after upload.**
+
+---
 
 ## 🤝 Contributing
 
