@@ -97,8 +97,8 @@ Want to help bring this vision to life? Contributions are welcome! Whether it's 
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details, including the use of Generative AI to create this application.
 
 ---
 
-Let's manage media simply and securely in the cloud! 🚀
+Manage media simply and securely in the cloud! 🚀
