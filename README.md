@@ -9,7 +9,7 @@ Tired of juggling media files across different platforms? Need a simple, authent
 
 **Meet the Cloud Vision Manager!** 🎉
 
-This nifty Python application, designed to run smoothly on Google Cloud Run, provides a lightweight file manager interface powered by the magic of Cloudinary. Log in securely with your Google Account and start managing your media assets with ease!
+The application logic is Python and uses Flask. The first version is designed to run smoothly on Google Cloud Run, provides a lightweight file manager interface powered by the magic of Cloudinary. Log in securely via OAuth 2.0 with your Google Account and start managing your media assets with ease!
 
 ---
 
