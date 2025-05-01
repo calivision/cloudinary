@@ -70,6 +70,8 @@ Ready to launch your own Cloud Vision Manager? Here's the high-level view:
 6.  **Configure OAuth Origins:** Add the deployed Cloud Run Service URL to the "Authorized JavaScript origins" in your Google OAuth Client ID settings.
 7.  **(If Needed) Configure Public Access/IAP:** If blocked by Org Policies, configure IAP or adjust policies to allow access.
 
+---
+
 ➡️ **Detailed Deployment Guide with Step-By-Step Instructions Will Be Posted ASAP** 
 
 ---
