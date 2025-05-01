@@ -35,6 +35,12 @@ The application logic is Python and uses Flask. The first version is designed to
 
 ---
 
+[OAuth 2.0 Login](https://res.cloudinary.com/dqzj6idvg/image/upload/c_limit,w_300/v1745837025/appengine_uploads/admin-david%40california.vision/user_admin-david/cvmanager-splash_ac732e65.png)
+
+[Upload Manager Page](https://res.cloudinary.com/dqzj6idvg/image/upload/c_limit,w_300/v1745836739/appengine_uploads/admin-david%40california.vision/user_admin-david/cvmanager-UI_39ee5d39.png)
+
+---
+
 ## 🏁 Getting Started (Deploying on Cloud Run)
 
 Ready to launch your own Cloud Vision Manager? Here's the high-level view:
